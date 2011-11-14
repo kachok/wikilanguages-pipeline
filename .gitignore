@@ -1,0 +1,7 @@
+*.pyc
+cache/
+data/
+settings.py
+
+#non-original code
+scripts/generate_dictionary.py
