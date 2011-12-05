@@ -1,11 +1,21 @@
 #returns list of articles per language
 
-def getarticles(langs, filename):
+import logging
+import settings
+
+def getarticles(language, filename):
 	fd = open(filename)
 	
-	articles={}
+	articles=[]
+	
+	total=0
+	titles=0
+	top=settings.settings["top_articles"]
 	
 	for line in fd:
+		
+		total=total+1
+		
 		# process content
 		(lang, pos, title, count) = line.split(" ")
 	
@@ -13,14 +23,14 @@ def getarticles(langs, filename):
 		if lang.find(".")>0:
 			continue
 	
-		if lang in langs:
-			if lang in articles:
-				articles[lang].append(title)
-			else:
-				articles[lang]=[]
-				articles[lang].append(title)
+		if lang==language:
+				#NOTE: currently top X functionality relies on titles being sorted by frequency in source file
+				if titles<top:
+					articles.append(title)
+				titles=titles+1
 		else:
-			#language is not on our list, skip it
+			#language is not on current language, skip it
 			pass
 
+	logging.info("titles processed: %s, titles from language %s found %s, added: %s"%(total, language, titles, top))
 	return articles

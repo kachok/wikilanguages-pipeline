@@ -2,6 +2,7 @@
 cache/
 data/
 settings.py
+.DS_Store
 
 #non-original code
 scripts/generate_dictionary.py
