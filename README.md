@@ -4,6 +4,7 @@ Wiki Languages Pipeline
 Wikipedia Languages Pipeline is multistep pipeline script to:
 
 * Collect list of wikipedia languages
+based on stats from - http://meta.wikimedia.org/wiki/List_of_Wikipedias#All_Wikipedias_ordered_by_number_of_articles
 
 * Collect wikipedia articles usage per language
 
@@ -25,4 +26,17 @@ Wikipydia library
 wpTextExtractor library
 
 NLTK library
+
+
+Running pipeline
+----------------
+
+Train your tokenizers for all languages first
+> python train_tokenizers.py
+
+Run pipeline to generate vocabularies for all languages
+
+> python main.py
 	
+Generate sample input for Str2Img.java (render sample images of words in diff languages (top 50 words))
+> python image_test.py
