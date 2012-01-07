@@ -104,13 +104,17 @@ def load_freq_pages(page_view_counts_filename, language, limit=settings["top_art
             id = wikipydia.query_page_id(title, language=lang)
             freq_pages.append(title)
          except KeyError:
-            logging.debug( 'no page for %s %s' % (title, language))
+            #logging.debug( 'no page for %s %s' % (title, language))
+			print 'no page for ', title, language
          except IOError:
-            logging.debug( 'cannot reach %s %s' % (title, language))
+            #logging.debug( 'cannot reach %s %s' % (title, language))
+			print 'cannot reach ', title, language
          except TypeError:
-            logging.debug( 'unicode object error for %s %s' % (title, language))
+            #logging.debug( 'unicode object error for %s %s' % (title, language))
+			print 'unicode object error for ', title, language
          except UnicodeDecodeError:
-            logging.debug( 'unicode error for %s %s' % (title, language))
+            #logging.debug( 'unicode error for %s %s' % (title, language))
+			print 'unicode error for ', title, language
    input_file.close()
 
    logging.info("# of articles loaded: %s" % (len(freq_pages)))
@@ -162,13 +166,17 @@ def get_vocab(articles, lang, lang_properties, num_context_sentences=settings["n
 			#logging.debug( u'no page for %s %s' % (article, lang))
 			print u'no page for ', article, lang
 		except IOError:
-			logging.debug( u'cannot reach %s %s' % (article, lang))
+			#logging.debug( u'cannot reach %s %s' % (article, lang))
+			print u'cannot reach ', article, lang
 		except TypeError:
-			logging.debug( u'unicode object error for %s %s' % (article, lang))
+			#logging.debug( u'unicode object error for %s %s' % (article, lang))
+			print u'unicode object error for ', article, lang
 		except UnicodeDecodeError:
-			logging.debug( u'unicode error for %s %s' % (article, lang))
+			#logging.debug( u'unicode error for %s %s' % (article, lang))
+			print u'unicode error for ', article, lang
 		except:
-			logging.debug( u'somethign weird happened for %s %s' % (article, lang))
+			#logging.debug( u'somethign weird happened for %s %s' % (article, lang))
+			print u'somethign weird happened for ', article, lang
 
 	logging.info("vocabulary size: %s" % (len(vocab)))
 	return vocab
