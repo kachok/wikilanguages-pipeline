@@ -240,7 +240,9 @@ def get_lang_links(lang_links_filename, lang, per_lang_limit=10000):
 		link = links[lang_index]
 		lang = langs[lang_index]
 		if not links[lang_index] == "":
-			lang_links[links[en_index]] = {"translation":links[lang_index],"order":i}
+			english=links[en_index].lower()
+			foreign=links[lang_index].lower()
+			lang_links[english] = {"translation":foreign,"order":i}
 
 		if len(lang_links) >= per_lang_limit:
 			break
