@@ -30,13 +30,16 @@ NLTK library
 
 Running pipeline
 ----------------
-
-Train your tokenizers for all languages first
-> python train_tokenizers.py
-
 Run pipeline to generate vocabularies for all languages
 
-> python main.py
-	
-Generate sample input for Str2Img.java (render sample images of words in diff languages (top 50 words))
-> python image_test.py
+Get help on command line options
+>python main.py --help
+
+Run full production pipeline
+>python main.py --settings settings --debug INFO --tokenizer TRAIN
+
+--tokenizer parameter explained:
+TRAIN - will train new tokenizers and save them
+NEW - will train tokenizer if it is missing from tokenizer folder
+SKIP - will not train tokenizers, will use existing ones (assuming that they are exist for all languages)
+ONLY - like TRAIN but will exit after training, without continuing with the rest of the pipeline tasks (tokenizer training only)

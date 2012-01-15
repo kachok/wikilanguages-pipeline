@@ -10,19 +10,107 @@ import string
 import codecs
 import nltk.data
 
+from sys import exit
+
 from nltk.corpus import wordnet
 
 import unicodedata
-
-
-from settings import settings
 
 import urllib
 import json
 import pickle
 
-from scripts import tokenizer
 from langlib import get_languages_list, get_languages_properties
+
+import argparse
+import logging
+
+parser = argparse.ArgumentParser(description='Build vocabularies and dictionaries for multiple languages based on Wikipedia',epilog="And that's how you'd do it")
+
+parser.add_argument('--settings', default='settings', help='filename of settings file to use: settings (.py) will be used by default')
+parser.add_argument('--level',default='INFO', choices=["DEBUG","INFO","WARNING","ERROR","CRITICAL"],help='logging level: e.g. DEBUG, INFO, etc.')
+parser.add_argument('--tokenizer',default='SKIP', choices=["TRAIN","NEW","SKIP","ONLY"], help='tokenizer trainer behaviour: TRAIN (train all tokenizer), NEW (train only if missing), SKIP (skip training completely), ONLY (train all tokenizers and exit when done)')
+
+args = parser.parse_args()
+
+print "debug level: ", args.level
+
+
+# basic logging setup for console output
+numeric_level = getattr(logging, args.level.upper(), None)
+if not isinstance(numeric_level, int):
+    raise ValueError('Invalid log level: %s' % args.level)
+
+logging.basicConfig(
+	format='%(asctime)s %(levelname)s %(message)s', 
+	datefmt='%m/%d/%Y %I:%M:%S %p',
+	level=numeric_level)
+
+
+try:
+  settings_module = __import__(args.settings) #, globals={}, locals={}, fromlist=[], level=-1
+  settings=settings_module.settings
+except ImportError: 
+  import sys
+  sys.stderr.write("Error: Can't find the file '%r.py' in the directory containing %r.\n" % (args.settings, args.settings))
+  sys.exit(1)
+
+
+
+
+def train(lang, articles, splitters_folder):
+    collect_wiki_corpus(lang,lang, articles, splitters_folder)
+    train_sentence_splitter(lang, splitters_folder)
+
+def collect_wiki_corpus(language, lang, articles, splitters_folder):
+    """
+    Download <n> random wikipedia articles in language <lang>
+    """
+    filename = "%s%s.plain" % (splitters_folder,language)
+    out = codecs.open(filename, "w", "utf-8")
+
+    for title in articles:
+        title=unquote(title)
+        #print ">> ",title
+        try:
+	        article_dict = query_text_rendered(title, language=lang)
+	        logging.debug("Training on: %s" % (unquote(title)))
+	        # Soup it
+	        soup = BeautifulSoup(article_dict['html'])
+	        p_text = ''
+	        for p in soup.findAll('p'):
+	            only_p = p.findAll(text=True)
+	            p_text = ''.join(only_p)
+
+	            # Tokenize but keep . at the end of words
+	            p_tokenized = ' '.join(PunktWordTokenizer().tokenize(p_text))
+
+	            out.write(p_tokenized)
+	            out.write("\n")
+        except KeyError:
+			logging.error("tokenizer training error")
+    out.close()
+
+
+def train_sentence_splitter(lang, splitters_folder):
+    """
+    Train an NLTK punkt tokenizer for sentence splitting.
+    http://www.nltk.org
+    """
+    # Read in trainings corpus
+    plain_file = "%s%s.plain" % (splitters_folder,lang)
+    text = codecs.open(plain_file, "Ur", "utf-8").read()
+
+    # Train tokenizer
+    tokenizer = PunktSentenceTokenizer()
+    tokenizer.train(text)
+
+    # Dump pickled tokenizer
+    pickle_file = "%s%s.pickle" % (splitters_folder,lang)
+    out = open(pickle_file, "wb")
+    pickle.dump(tokenizer, out)
+    out.close()
+
 
 def determine_splitter(lang):
 	#TODO: build better tokenizer selector (e.g. rely on existing NLTK tokenizers as well as custom tokenizers for Japanese/Chineese)
@@ -339,17 +427,8 @@ def save_results(lang, vocab, lang_links):
 	f.close()
 	logging.info("saved language links into: %s " % (settings["output_folder"]+lang+"_links.pickle"))
 	
-	
 
-
-# basic logging setup for console output
-import logging
-logging.basicConfig(
-	format='%(asctime)s %(levelname)s %(message)s', 
-	datefmt='%m/%d/%Y %I:%M:%S %p',
-	level=logging.INFO)
-
-logging.info("wikilanguages pipeline - START")
+################################################################################
 
 target_language = settings["target_language"]
 logging.info("target language: %s" % (target_language))
@@ -367,28 +446,57 @@ if len(langs)<=5:
 langs_properties={} #list of languages' properties (e.g. LTR vs RTL script, non latin characters, etc) 
 langs_properties=get_languages_properties(settings["languages_properties_file"], target_language)
 
-#en_articles = load_freq_pages(settings["stats_file"], target_language)
-#en_vocab = get_vocab(en_articles, target_language, langs_properties[target_language])
 
-#cut off words below top X
-#en_vocab=vocab_freq_top(en_vocab)
+if args.tokenizer=="NEW" or args.tokenizer=="TRAIN" or args.tokenizer=="ONLY":
+	logging.info("tokenizers trainer - START")
 
+	# iterate over each language individually
+	for i, lang in enumerate(langs):
 
+		logging.info("processing language: %s (#%s out of %s) " %(lang,i+1,len(langs)))
+
+		train_tokenizer=True
+		if args.tokenizer=="NEW":
+			try:
+				tokenizer = 'file:'+settings["root_folder"]+settings["splitters_folder"]+'%s.pickle' % (lang)
+				tokenizer = nltk.data.load(tokenizer)
+				train_tokenizer=False
+				logging.info("tokenizer already exists")
+				
+			except:
+				pass
+
+		if train_tokenizer:
+			logging.info("starting tokenizer trainer")
+
+			logging.info("loading list of articles")
+			articles = load_freq_pages(settings["stats_file"], lang)
+
+			logging.info("# of articles loaded: %s" % (len(articles)))
+
+			train(lang, articles, settings["splitters_folder"])
+			logging.info("tokenizer training completed")
+
+	logging.info("tokenizers trainer - FINISH")
+elif args.tokenizer=="SKIP":
+	logging.info("skipping tokenizer training")
+
+if args.tokenizer=="ONLY":
+	exit()
+	
+
+logging.info("wikilanguages pipeline - START")
 # iterate over each language individually
 for i, lang in enumerate(langs):
 	
+	logging.info("--------------------------------------------------------------------------------")
 	logging.info("processing language: %s (#%s out of %s) " %(lang,i+1,len(langs)))
 	
 	# get list of top N articles for current language
 	# TODO: build method of downloading relevant stats and parsing them
 	# for now use data/stats/combined-pagecounts-2009 as a source
 
-
 	articles = load_freq_pages(settings["stats_file"], lang)
-
-	# tokeniers are trained in separate routine, now
-	#tokenizer.train(lang, articles, settings["splitters_folder"])
-	#logging.info("tokenizer training completed")
 
 	vocab = get_vocab(articles, lang, langs_properties[lang])
 	
@@ -403,23 +511,17 @@ for i, lang in enumerate(langs):
 	
 	lang_links = get_lang_links_context(lang_links, lang, settings["top_links"], settings["num_context_sentences"])
 
-	#print lang_link_vocab_contexts
-	#print english_translations
-
-	#get_vocab_contexts
-	#get_vocab_contexts_for_lang_links
-	
 	save_results(lang, vocab, lang_links)
 
 	#debug printout of vocabulary
-	print "DEBUG - vocab"
-	for word in vocab:
-		print word, vocab[word]["frequency"], len(vocab[word]["context"])
+	#print "DEBUG - vocab"
+	#for word in vocab:
+	#	print word, vocab[word]["frequency"], len(vocab[word]["context"])
 
 	#debug printout of lang links
-	print "DEBUG - lang_links"
-	for word in lang_links:
-		print word, lang_links[word]["translation"], len(lang_links[word]["context"])
+	#print "DEBUG - lang_links"
+	#for word in lang_links:
+	#	print word, lang_links[word]["translation"], len(lang_links[word]["context"])
 
 
 logging.info("wikilanguages pipeline - FINISH")
