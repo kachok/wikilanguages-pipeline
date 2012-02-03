@@ -10,6 +10,13 @@ import string
 import codecs
 import nltk.data
 
+
+from BeautifulSoup import BeautifulSoup
+from nltk.tokenize.punkt import PunktSentenceTokenizer
+from nltk.tokenize.punkt import PunktWordTokenizer
+from wikipydia import query_random_titles
+from wikipydia import query_text_rendered
+
 import BeautifulSoup
 
 from sys import exit
