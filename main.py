@@ -10,6 +10,8 @@ import string
 import codecs
 import nltk.data
 
+import BeautifulSoup
+
 from sys import exit
 
 from nltk.corpus import wordnet
@@ -76,7 +78,7 @@ def collect_wiki_corpus(language, lang, articles, splitters_folder):
 	        article_dict = wikipydia.query_text_rendered(title, language=lang)
 	        logging.debug("Training on: %s" % (unquote(title)))
 	        # Soup it
-	        soup = BeautifulSoup(article_dict['html'])
+	        soup = BeautifulSoup.BeautifulSoup(article_dict['html'])
 	        p_text = ''
 	        for p in soup.findAll('p'):
 	            only_p = p.findAll(text=True)
