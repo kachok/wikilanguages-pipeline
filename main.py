@@ -73,7 +73,7 @@ def collect_wiki_corpus(language, lang, articles, splitters_folder):
         title=unquote(title)
         #print ">> ",title
         try:
-	        article_dict = query_text_rendered(title, language=lang)
+	        article_dict = wikipydia.query_text_rendered(title, language=lang)
 	        logging.debug("Training on: %s" % (unquote(title)))
 	        # Soup it
 	        soup = BeautifulSoup(article_dict['html'])
