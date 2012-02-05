@@ -38,7 +38,9 @@ parser = argparse.ArgumentParser(description='Build vocabularies and dictionarie
 
 parser.add_argument('--settings', default='settings', help='filename of settings file to use: settings (.py) will be used by default')
 parser.add_argument('--level',default='INFO', choices=["DEBUG","INFO","WARNING","ERROR","CRITICAL"],help='logging level: e.g. DEBUG, INFO, etc.')
-parser.add_argument('--tokenizer',default='SKIP', choices=["TRAIN","NEW","SKIP","ONLY"], help='tokenizer trainer behaviour: TRAIN (train all tokenizer), NEW (train only if missing), SKIP (skip training completely), ONLY (train all tokenizers and exit when done)')
+parser.add_argument('--tokenizer',default='SKIP', choices=["TRAIN","SKIP"], help='tokenizer trainer behaviour: TRAIN (train all tokenizer), SKIP (skip training completely)')
+parser.add_argument('--pipeline',default='PROCESS', choices=["PROCESS","SKIP"], help='pipeline behaviour: PROCESS (process and collect vocabularies/dictionaries),  SKIP (skip pipeline completely)')
+parser.add_argument('--override',default='YES', choices=["YES","NO"], help='override already trained tokenizers and/or output files')
 
 args = parser.parse_args()
 
@@ -48,7 +50,7 @@ print "debug level: ", args.level
 # basic logging setup for console output
 numeric_level = getattr(logging, args.level.upper(), None)
 if not isinstance(numeric_level, int):
-    raise ValueError('Invalid log level: %s' % args.level)
+	raise ValueError('Invalid log level: %s' % args.level)
 
 logging.basicConfig(
 	format='%(asctime)s %(levelname)s %(message)s', 
@@ -57,68 +59,68 @@ logging.basicConfig(
 
 
 try:
-  settings_module = __import__(args.settings) #, globals={}, locals={}, fromlist=[], level=-1
-  settings=settings_module.settings
+	settings_module = __import__(args.settings) #, globals={}, locals={}, fromlist=[], level=-1
+	settings=settings_module.settings
 except ImportError: 
-  import sys
-  sys.stderr.write("Error: Can't find the file '%r.py' in the directory containing %r.\n" % (args.settings, args.settings))
-  sys.exit(1)
+	import sys
+	sys.stderr.write("Error: Can't find the file '%r.py' in the directory containing %r.\n" % (args.settings, args.settings))
+	sys.exit(1)
 
 
 
 
 def train(lang, articles, splitters_folder):
-    collect_wiki_corpus(lang,lang, articles, splitters_folder)
-    train_sentence_splitter(lang, splitters_folder)
+	collect_wiki_corpus(lang,lang, articles, splitters_folder)
+	train_sentence_splitter(lang, splitters_folder)
 
 def collect_wiki_corpus(language, lang, articles, splitters_folder):
-    """
-    Download <n> random wikipedia articles in language <lang>
-    """
-    filename = "%s%s.plain" % (splitters_folder,language)
-    out = codecs.open(filename, "w", "utf-8")
+	"""
+	Download <n> random wikipedia articles in language <lang>
+	"""
+	filename = "%s%s.plain" % (splitters_folder,language)
+	out = codecs.open(filename, "w", "utf-8")
 
-    for title in articles:
-        title=unquote(title)
-        #print ">> ",title
-        try:
-	        article_dict = wikipydia.query_text_rendered(title, language=lang)
-	        logging.debug("Training on: %s" % (unquote(title)))
-	        # Soup it
-	        soup = BeautifulSoup.BeautifulSoup(article_dict['html'])
-	        p_text = ''
-	        for p in soup.findAll('p'):
-	            only_p = p.findAll(text=True)
-	            p_text = ''.join(only_p)
+	for title in articles:
+		title=unquote(title)
+		#print ">> ",title
+		try:
+			article_dict = wikipydia.query_text_rendered(title, language=lang)
+			logging.debug("Training on: %s" % (unquote(title)))
+			# Soup it
+			soup = BeautifulSoup.BeautifulSoup(article_dict['html'])
+			p_text = ''
+			for p in soup.findAll('p'):
+				only_p = p.findAll(text=True)
+				p_text = ''.join(only_p)
 
-	            # Tokenize but keep . at the end of words
-	            p_tokenized = ' '.join(PunktWordTokenizer().tokenize(p_text))
+				# Tokenize but keep . at the end of words
+				p_tokenized = ' '.join(PunktWordTokenizer().tokenize(p_text))
 
-	            out.write(p_tokenized)
-	            out.write("\n")
-        except KeyError:
+				out.write(p_tokenized)
+				out.write("\n")
+		except KeyError:
 			logging.error("tokenizer training error")
-    out.close()
+	out.close()
 
 
 def train_sentence_splitter(lang, splitters_folder):
-    """
-    Train an NLTK punkt tokenizer for sentence splitting.
-    http://www.nltk.org
-    """
-    # Read in trainings corpus
-    plain_file = "%s%s.plain" % (splitters_folder,lang)
-    text = codecs.open(plain_file, "Ur", "utf-8").read()
+	"""
+	Train an NLTK punkt tokenizer for sentence splitting.
+	http://www.nltk.org
+	"""
+	# Read in trainings corpus
+	plain_file = "%s%s.plain" % (splitters_folder,lang)
+	text = codecs.open(plain_file, "Ur", "utf-8").read()
 
-    # Train tokenizer
-    tokenizer = PunktSentenceTokenizer()
-    tokenizer.train(text)
+	# Train tokenizer
+	tokenizer = PunktSentenceTokenizer()
+	tokenizer.train(text)
 
-    # Dump pickled tokenizer
-    pickle_file = "%s%s.pickle" % (splitters_folder,lang)
-    out = open(pickle_file, "wb")
-    pickle.dump(tokenizer, out)
-    out.close()
+	# Dump pickled tokenizer
+	pickle_file = "%s%s.pickle" % (splitters_folder,lang)
+	out = open(pickle_file, "wb")
+	pickle.dump(tokenizer, out)
+	out.close()
 
 
 def determine_splitter(lang):
@@ -147,76 +149,76 @@ def use_as_gold_standard_translation(en_article, article, lang):
 
    #use only it is a single word (both foreign and english)
    if (len(en_article.split(" "))>1):
-      use_it = False 
+	  use_it = False 
    if (len(article.split(" "))>1):
-      use_it = False 
+	  use_it = False 
 
 
    if en_article == article:
-      use_it = False 
+	  use_it = False 
    if use_it and en_article.find(article) != -1:
-      use_it = False
+	  use_it = False
    if use_it and article.find(en_article) != -1:
-      use_it = False
+	  use_it = False
    if use_it:
-      en_words = en_article.split(' ')
-      for word in article.split(' '):
-         if word in en_words:
-            use_it = False
+	  en_words = en_article.split(' ')
+	  for word in article.split(' '):
+		 if word in en_words:
+			use_it = False
    if use_it:
-      try:
-         categories = wikipydia.query_categories(en_article, 'en')
-         for cat in categories:
-            if year_re.search(cat):
-               use_it = False
-      except IOError:
-         print 'cannot reach', article, lang
-      except KeyError:
-         print 'no page for', article, lang 
-      except ValueError:
-         print 'no page for', article, lang 
+	  try:
+		 categories = wikipydia.query_categories(en_article, 'en')
+		 for cat in categories:
+			if year_re.search(cat):
+			   use_it = False
+	  except IOError:
+		 print 'cannot reach', article, lang
+	  except KeyError:
+		 print 'no page for', article, lang 
+	  except ValueError:
+		 print 'no page for', article, lang 
    return use_it
 
 
 
 def load_freq_pages(page_view_counts_filename, language, limit=settings["top_articles"]):
-   """
-   Reads a file  with page view counts and retrieves the top-k
-   most frequent page for the language
-   """
-   #OPT: counts file is parsed separately for each language
-   logging.info("loading list of articles for language %s" % (language))
-
-   logging.debug("load freq pages for %s, limit=%s" % (language,limit))
-   freq_pages = []
-   #input_file = codecs.open(page_view_counts_filename, 'r', 'utf-8')
-   input_file = open(page_view_counts_filename, 'r')
-   for line in input_file:
-      #line = line.encode('UTF-8')
-      line = line.rstrip('\n')
-      (lang, rank, title, count) = line.split(' ')
-      if lang==language and len(freq_pages) < limit:
-         title = unquote(title)
-         try:
-            id = wikipydia.query_page_id(title, language=lang)
-            freq_pages.append(title)
-         except KeyError:
-            #logging.debug( 'no page for %s %s' % (title, language))
-			print 'no page for ', title, language
-         except IOError:
-            #logging.debug( 'cannot reach %s %s' % (title, language))
-			print 'cannot reach ', title, language
-         except TypeError:
-            #logging.debug( 'unicode object error for %s %s' % (title, language))
-			print 'unicode object error for ', title, language
-         except UnicodeDecodeError:
-            #logging.debug( 'unicode error for %s %s' % (title, language))
-			print 'unicode error for ', title, language
-   input_file.close()
-
-   logging.info("# of articles loaded: %s" % (len(freq_pages)))
-
-   return freq_pages
+	"""
+	Reads a file  with page view counts and retrieves the top-k
+	most frequent page for the language
+	"""
+	#OPT: counts file is parsed separately for each language
+	logging.info("loading list of articles for language %s" % (language))
+	
+	logging.debug("load freq pages for %s, limit=%s" % (language,limit))
+	freq_pages = []
+	#input_file = codecs.open(page_view_counts_filename, 'r', 'utf-8')
+	input_file = open(page_view_counts_filename, 'r')
+	for line in input_file:
+		#line = line.encode('UTF-8')
+		line = line.rstrip('\n')
+		(lang, rank, title, count) = line.split(' ')
+		if lang==language and len(freq_pages) < limit:
+			title = unquote(title)
+			try:
+				id = wikipydia.query_page_id(title, language=lang)
+				freq_pages.append(title)
+			except KeyError:
+				#logging.debug( 'no page for %s %s' % (title, language))
+				print 'no page for ', title, language
+			except IOError:
+				#logging.debug( 'cannot reach %s %s' % (title, language))
+				print 'cannot reach ', title, language
+			except TypeError:
+				#logging.debug( 'unicode object error for %s %s' % (title, language))
+				print 'unicode object error for ', title, language
+			except UnicodeDecodeError:
+				#logging.debug( 'unicode error for %s %s' % (title, language))
+				print 'unicode error for ', title, language
+	input_file.close()
+	
+	logging.info("# of articles loaded: %s" % (len(freq_pages)))
+	
+	return freq_pages
 
 def get_vocab(articles, lang, lang_properties, num_context_sentences=settings["num_context_sentences"], max_articles=settings["top_articles"]):
 	#build vocabulary based on list of articles and compile context sentences for each word
@@ -417,7 +419,7 @@ def get_lang_links_context(lang_links, lang, max_items=settings["top_links"], nu
 def save_results(lang, vocab, lang_links):
 	path = settings["output_folder"]
 	if not os.path.exists(path):
-	   os.makedirs(path)
+		os.makedirs(path)
 	logging.info("output folder prepared: %s" % (path))
 
 	date_time_str = time.strftime("%Y-%m-%dT%H%M")
@@ -456,7 +458,7 @@ langs_properties={} #list of languages' properties (e.g. LTR vs RTL script, non 
 langs_properties=get_languages_properties(settings["languages_properties_file"], target_language)
 
 
-if args.tokenizer=="NEW" or args.tokenizer=="TRAIN" or args.tokenizer=="ONLY":
+if args.tokenizer=="TRAIN":
 	logging.info("tokenizers trainer - START")
 
 	# iterate over each language individually
@@ -465,7 +467,7 @@ if args.tokenizer=="NEW" or args.tokenizer=="TRAIN" or args.tokenizer=="ONLY":
 		logging.info("processing language: %s (#%s out of %s) " %(lang,i+1,len(langs)))
 
 		train_tokenizer=True
-		if args.tokenizer=="NEW":
+		if args.override=="NO":
 			try:
 				tokenizer = 'file:'+settings["root_folder"]+settings["splitters_folder"]+'%s.pickle' % (lang)
 				tokenizer = nltk.data.load(tokenizer)
@@ -489,48 +491,68 @@ if args.tokenizer=="NEW" or args.tokenizer=="TRAIN" or args.tokenizer=="ONLY":
 	logging.info("tokenizers trainer - FINISH")
 elif args.tokenizer=="SKIP":
 	logging.info("skipping tokenizer training")
-
-if args.tokenizer=="ONLY":
-	exit()
 	
+if args.pipeline=="PROCESS":
 
-logging.info("wikilanguages pipeline - START")
-# iterate over each language individually
-for i, lang in enumerate(langs):
+	logging.info("wikilanguages pipeline - START")
+	# iterate over each language individually
+	for i, lang in enumerate(langs):
+		
+		logging.info("--------------------------------------------------------------------------------")
+		logging.info("processing language: %s (#%s out of %s) " %(lang,i+1,len(langs)))
 	
-	logging.info("--------------------------------------------------------------------------------")
-	logging.info("processing language: %s (#%s out of %s) " %(lang,i+1,len(langs)))
 	
-	# get list of top N articles for current language
-	# TODO: build method of downloading relevant stats and parsing them
-	# for now use data/stats/combined-pagecounts-2009 as a source
-
-	articles = load_freq_pages(settings["stats_file"], lang)
-
-	vocab = get_vocab(articles, lang, langs_properties[lang])
 	
-	#if non-latin, filter all "english" words
-	if (langs_properties[lang]["non-latin"]=='yes'):
-		vocab=vocab_filter_latin(vocab)
+		process_pipeline=True
+		if args.override=="NO":
+			try:
+				output = 'file:'+settings["root_folder"]+settings["splitters_folder"]+'%s.pickle' % (lang)
 
-	#cut off words below top X
-	vocab=vocab_freq_top(vocab)
+				# TODO: verify that output exist
+				path = settings["output_folder"]
+				f=open(settings["output_folder"]+settings["run_name"] + '_' +lang+"_vocabulary.pickle")
+				f.close()
+				f=open(settings["output_folder"]+settings["run_name"] + '_' +lang+"_links.pickle")
+				f.close()
+				process_pipeline=False
+				logging.info("output already exists")
+				
+			except:
+				pass
+
+		if process_pipeline:
+			# get list of top N articles for current language
+			# TODO: build method of downloading relevant stats and parsing them
+			# for now use data/stats/combined-pagecounts-2009 as a source
+		
+			articles = load_freq_pages(settings["stats_file"], lang)
+		
+			vocab = get_vocab(articles, lang, langs_properties[lang])
+			
+			#if non-latin, filter all "english" words
+			if (langs_properties[lang]["non-latin"]=='yes'):
+				vocab=vocab_filter_latin(vocab)
+		
+			#cut off words below top X
+			vocab=vocab_freq_top(vocab)
+			
+			lang_links = get_lang_links(settings["lang_links_file"], lang)
+			
+			lang_links = get_lang_links_context(lang_links, lang, settings["top_links"], settings["num_context_sentences"])
+		
+			save_results(lang, vocab, lang_links)
+		
+			#debug printout of vocabulary
+			#print "DEBUG - vocab"
+			#for word in vocab:
+			#	print word, vocab[word]["frequency"], len(vocab[word]["context"])
+		
+			#debug printout of lang links
+			#print "DEBUG - lang_links"
+			#for word in lang_links:
+			#	print word, lang_links[word]["translation"], len(lang_links[word]["context"])
+		
 	
-	lang_links = get_lang_links(settings["lang_links_file"], lang)
-	
-	lang_links = get_lang_links_context(lang_links, lang, settings["top_links"], settings["num_context_sentences"])
-
-	save_results(lang, vocab, lang_links)
-
-	#debug printout of vocabulary
-	#print "DEBUG - vocab"
-	#for word in vocab:
-	#	print word, vocab[word]["frequency"], len(vocab[word]["context"])
-
-	#debug printout of lang links
-	#print "DEBUG - lang_links"
-	#for word in lang_links:
-	#	print word, lang_links[word]["translation"], len(lang_links[word]["context"])
-
-
-logging.info("wikilanguages pipeline - FINISH")
+	logging.info("wikilanguages pipeline - FINISH")
+elif args.pipeline=="SKIP":
+	logging.info("skipping pipeline processing")
