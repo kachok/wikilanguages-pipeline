@@ -226,10 +226,12 @@ def get_vocab(articles, lang, lang_properties, num_context_sentences=settings["n
 	vocab={}
 	num_articles=0
 
+	splitter=determine_splitter(lang)
+	
 	for i,article in enumerate(articles):
 		try:
 			wikimarkup = wikipydia.query_text_raw(articles[i], lang)['text']
-			sentences,tags = wpTextExtractor.wiki2sentences(wikimarkup, determine_splitter(lang), True)
+			sentences,tags = wpTextExtractor.wiki2sentences(wikimarkup, splitter, True)
 
 			for sentence in sentences:
 				sent = ''.join(ch for ch in sentence if ch not in punct_to_exclude)
@@ -361,6 +363,8 @@ def get_lang_links_context(lang_links, lang, max_items=settings["top_links"], nu
 
 	links_with_context={}
 
+	splitter=determine_splitter(lang)
+
 	for i,en_article in enumerate(lang_links):
 		logging.debug ("item # %s from %s, # of good links %s, # of links needed %s" % (i, en_article,len(links_with_context), max_items))
 
@@ -376,7 +380,7 @@ def get_lang_links_context(lang_links, lang, max_items=settings["top_links"], nu
 			word = unicode(article, "UTF-8")
 			try:
 				wikimarkup = wikipydia.query_text_raw(article, lang)['text']
-				sentences,tags = wpTextExtractor.wiki2sentences(wikimarkup, determine_splitter(lang), True)
+				sentences,tags = wpTextExtractor.wiki2sentences(wikimarkup, splitter, True)
 				
 				for j,sentence in enumerate(sentences):
 					if re.search(word, sentence):
