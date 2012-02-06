@@ -296,6 +296,9 @@ def vocab_freq_top(vocab, top=settings["top_words"]):
 	#print vocab_sorted
 	logging.debug("top %s words: "%(top))
 	vocab_filtered={}
+	
+	if len(vocab_sorted)<top:
+		top=len(vocab_sorted)
 	for i in range(0,top):
 		vocab_filtered[vocab_sorted[i]]=vocab[vocab_sorted[i]]
 		logging.debug(vocab_sorted[i]+" "+str(vocab[vocab_sorted[i]]))
