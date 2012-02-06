@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from urllib import quote_plus, unquote
+from urllib import unquote
 import wikipydia
 import re
 import wpTextExtractor
 import time
 import os
-import string
 import codecs
 import nltk.data
 
@@ -14,19 +13,11 @@ import nltk.data
 from BeautifulSoup import BeautifulSoup
 from nltk.tokenize.punkt import PunktSentenceTokenizer
 from nltk.tokenize.punkt import PunktWordTokenizer
-from wikipydia import query_random_titles
-from wikipydia import query_text_rendered
-
-import BeautifulSoup
-
-from sys import exit
 
 from nltk.corpus import wordnet
 
 import unicodedata
 
-import urllib
-import json
 import pickle
 
 from langlib import get_languages_list, get_languages_properties
@@ -100,6 +91,8 @@ def collect_wiki_corpus(language, lang, articles, splitters_folder):
 				out.write("\n")
 		except KeyError:
 			logging.error("tokenizer training error")
+		except:
+			logging.error("some weird (JSON) error")
 	out.close()
 
 
@@ -135,49 +128,49 @@ def determine_splitter(lang):
 		return tokenizer.tokenize
 	except:
 		logging.error("tokenizer for language %s not found" % (lang))
-		return null
+		return None
 
 def use_as_gold_standard_translation(en_article, article, lang):
-   # takes english and foreign language article titles and decides if they can be used as translation pair
-   year_re = re.compile(r'\b\d\d\d\d')
-
-   use_it = True
-
-   #filter out all non-english vocabulary words based on WordNet
-   if not wordnet.synsets(en_article):
-	  use_it=False
-
-   #use only it is a single word (both foreign and english)
-   if (len(en_article.split(" "))>1):
-	  use_it = False 
-   if (len(article.split(" "))>1):
-	  use_it = False 
-
-
-   if en_article == article:
-	  use_it = False 
-   if use_it and en_article.find(article) != -1:
-	  use_it = False
-   if use_it and article.find(en_article) != -1:
-	  use_it = False
-   if use_it:
-	  en_words = en_article.split(' ')
-	  for word in article.split(' '):
-		 if word in en_words:
-			use_it = False
-   if use_it:
-	  try:
-		 categories = wikipydia.query_categories(en_article, 'en')
-		 for cat in categories:
-			if year_re.search(cat):
-			   use_it = False
-	  except IOError:
-		 print 'cannot reach', article, lang
-	  except KeyError:
-		 print 'no page for', article, lang 
-	  except ValueError:
-		 print 'no page for', article, lang 
-   return use_it
+	# takes english and foreign language article titles and decides if they can be used as translation pair
+	year_re = re.compile(r'\b\d\d\d\d')
+	
+	use_it = True
+	
+	#filter out all non-english vocabulary words based on WordNet
+	if not wordnet.synsets(en_article):
+		use_it=False
+	
+	#use only it is a single word (both foreign and english)
+	if (len(en_article.split(" "))>1):
+		use_it = False 
+	if (len(article.split(" "))>1):
+		use_it = False 
+	
+	
+	if en_article == article:
+		use_it = False 
+	if use_it and en_article.find(article) != -1:
+		use_it = False
+	if use_it and article.find(en_article) != -1:
+		use_it = False
+	if use_it:
+		en_words = en_article.split(' ')
+		for word in article.split(' '):
+			if word in en_words:
+				use_it = False
+	if use_it:
+		try:
+			categories = wikipydia.query_categories(en_article, 'en')
+			for cat in categories:
+				if year_re.search(cat):
+					use_it = False
+		except IOError:
+			print 'cannot reach', article, lang
+		except KeyError:
+			print 'no page for', article, lang 
+		except ValueError:
+			print 'no page for', article, lang 
+	return use_it
 
 
 
