@@ -73,12 +73,13 @@ def collect_wiki_corpus(language, lang, articles, splitters_folder):
 
 	for title in articles:
 		title=unquote(title)
-		#print ">> ",title
+		print ">> ",title
+		print unquote(title)
 		try:
 			article_dict = wikipydia.query_text_rendered(title, language=lang)
 			logging.debug("Training on: %s" % (unquote(title)))
 			# Soup it
-			soup = BeautifulSoup.BeautifulSoup(article_dict['html'])
+			soup = BeautifulSoup(article_dict['html'])
 			p_text = ''
 			for p in soup.findAll('p'):
 				only_p = p.findAll(text=True)
@@ -91,8 +92,8 @@ def collect_wiki_corpus(language, lang, articles, splitters_folder):
 				out.write("\n")
 		except KeyError:
 			logging.error("tokenizer training error")
-		except:
-			logging.error("some weird (JSON) error")
+		#except:
+			#logging.error("some weird (JSON) error")
 	out.close()
 
 
