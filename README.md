@@ -40,6 +40,13 @@ Run full production pipeline
 
 --tokenizer parameter explained:
 TRAIN - will train new tokenizers and save them
-NEW - will train tokenizer if it is missing from tokenizer folder
 SKIP - will not train tokenizers, will use existing ones (assuming that they are exist for all languages)
-ONLY - like TRAIN but will exit after training, without continuing with the rest of the pipeline tasks (tokenizer training only)
+
+--pipeline parameter explained:
+PROCESS - please proceed
+SKIP - skip generating vocabulary/dictionary
+
+--override parameter explained:
+YES - override existing data
+NO - skip if vocabulary/dictionary is alrady exist
+

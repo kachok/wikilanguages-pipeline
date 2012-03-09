@@ -6,3 +6,15 @@ settings.py
 
 #non-original code
 scripts/generate_dictionary.py
+
+.project
+
+.pydevproject
+
+.settings/
+
+old/
+
+settings_*
+
+scripts/scrap/
